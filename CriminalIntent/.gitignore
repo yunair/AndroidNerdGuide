@@ -2,6 +2,37 @@
 /local.properties
 /.idea/workspace.xml
 /.idea/libraries
+/.idea/gradle.xml
+/.idea/tasks.xml
 .DS_Store
 /build
 /captures
+
+
+## File-based project format:
+
+*.ipr
+
+*.iws
+
+
+
+
+# mpeltonen/sbt-idea plugin
+
+.idea_modules/
+
+
+# JIRA plugin
+
+atlassian-ide-plugin.xml
+
+
+# Crashlytics plugin (for Android Studio and IntelliJ)
+
+com_crashlytics_export_strings.xml
+
+crashlytics.properties
+
+crashlytics-build.properties
+
