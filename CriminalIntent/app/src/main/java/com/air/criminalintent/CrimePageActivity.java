@@ -13,13 +13,14 @@ import android.view.MenuItem;
 import com.air.criminalintent.model.Crime;
 import com.air.criminalintent.model.CrimeLab;
 
-import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 
 
 public class CrimePageActivity extends FragmentActivity implements ViewPager.OnPageChangeListener{
     private ViewPager mViewPager;
-    private ArrayList<Crime> mCrimes;
+    private List<Crime> mCrimes;
+
 
     protected Fragment createFragment() {
         UUID uuid = (UUID)getIntent().getSerializableExtra(CrimeFragment.EXTRA_CRIME_ID);
