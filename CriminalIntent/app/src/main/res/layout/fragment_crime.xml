@@ -9,17 +9,37 @@
               android:paddingTop="@dimen/activity_vertical_margin"
               tools:context="com.air.criminalintent.CrimeFragment">
 
-    <TextView
-        style="?android:listSeparatorTextViewStyle"
-        android:layout_width="match_parent"
+    <RelativeLayout
+        android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="@string/crime_title_label"/>
+        android:paddingLeft="@dimen/activity_horizontal_margin"
+        android:paddingRight="@dimen/activity_horizontal_margin">
+        <ImageButton
+            android:id="@+id/crime_image_button"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:background="@android:drawable/ic_menu_camera"
+            android:contentDescription="@string/take"
+            android:layout_marginRight="4dp"/>
+        <TextView
+            android:id="@+id/crime_text_title"
+            android:layout_toRightOf="@+id/crime_image_button"
+            android:layout_alignBaseline="@+id/crime_image_button"
+            style="?android:listSeparatorTextViewStyle"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/crime_title_label"/>
 
-    <EditText
-        android:id="@+id/crime_title"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:hint="@string/crime_title_hint"/>
+        <EditText
+            android:id="@+id/crime_title"
+            android:layout_below="@+id/crime_image_button"
+            android:layout_toRightOf="@+id/crime_image_button"
+            android:layout_toEndOf="@+id/crime_image_button"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="@string/crime_title_hint"/>
+    </RelativeLayout>
+
 
     <TextView
         style="?android:listSeparatorTextViewStyle"

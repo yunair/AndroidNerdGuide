@@ -1,7 +1,10 @@
 package com.air.criminalintent;
 
+import android.annotation.TargetApi;
 import android.app.Activity;
 import android.content.Intent;
+import android.content.pm.PackageManager;
+import android.hardware.Camera;
 import android.os.Build;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
@@ -10,6 +13,7 @@ import android.support.v4.app.NavUtils;
 import android.text.Editable;
 import android.text.TextWatcher;
 import android.text.format.DateFormat;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.MenuItem;
 import android.view.View;
@@ -18,6 +22,7 @@ import android.widget.Button;
 import android.widget.CheckBox;
 import android.widget.CompoundButton;
 import android.widget.EditText;
+import android.widget.ImageButton;
 
 import com.air.criminalintent.model.Crime;
 import com.air.criminalintent.model.CrimeLab;
@@ -29,14 +34,17 @@ import java.util.UUID;
  * A placeholder fragment containing a simple view.
  */
 public class CrimeFragment extends Fragment {
+    private static final String TAG = "CrimeFragment";
     public static final String EXTRA_CRIME_ID = "com.air.criminalintent.crime_id";
     private static final String DIALOG_DATE = "date";
     private static final int REQUEST_DATE = 0;
+    private static final int REQUEST_PHOTO = 1;
     private static final int RESULT_DATE = 10;
     private static final int RESULT_TIME = 100;
     private Crime mCrime;
     private EditText mTitleField;
     private Button mDateButton;
+    private ImageButton mPhotoButton;
     private CheckBox mSolvedCheckBox;
 
     public static CrimeFragment newInstance(UUID crimeId){
@@ -52,6 +60,7 @@ public class CrimeFragment extends Fragment {
     public CrimeFragment() {
     }
 
+    @TargetApi(Build.VERSION_CODES.JELLY_BEAN_MR1)
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
@@ -64,7 +73,26 @@ public class CrimeFragment extends Fragment {
         initTitleField(v);
         initDateButton(v);
         initSolvedCheckBox(v);
+        initPhotoButton(v);
+
         return v;
+    }
+
+    private void initPhotoButton(View v) {
+        mPhotoButton = (ImageButton) v.findViewById(R.id.crime_image_button);
+        mPhotoButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                Intent i = new Intent(getActivity(), CrimeCameraActivity.class);
+                startActivityForResult(i, REQUEST_PHOTO);
+            }
+        });
+        PackageManager pm = getActivity().getPackageManager();
+        boolean hasCamera = pm.hasSystemFeature(PackageManager.FEATURE_CAMERA_ANY)
+                && Camera.getNumberOfCameras() > 0;
+        if(!hasCamera){
+            mPhotoButton.setEnabled(false);
+        }
     }
 
     private void initSolvedCheckBox(View v) {
@@ -159,6 +187,9 @@ public class CrimeFragment extends Fragment {
             final Date date = (Date) data.getSerializableExtra(DatePickerFragment.EXTRA_DATE);
             mCrime.setDate(date);
             updateDate();
+        }else if (requestCode == REQUEST_PHOTO) {
+            String filename = data.getStringExtra(CrimeCameraFragment.EXTRA_PHOTO_FILENAME);
+            Log.d(TAG, "filename : " + filename);
         }
         super.onActivityResult(requestCode, resultCode, data);
     }
