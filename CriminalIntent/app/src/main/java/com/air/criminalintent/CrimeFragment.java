@@ -15,6 +15,7 @@ import android.support.v4.app.NavUtils;
 import android.text.Editable;
 import android.text.TextWatcher;
 import android.text.format.DateFormat;
+import android.view.ContextMenu;
 import android.view.LayoutInflater;
 import android.view.MenuItem;
 import android.view.Surface;
@@ -82,6 +83,7 @@ public class CrimeFragment extends Fragment {
         initSolvedCheckBox(v);
         initPhotoButton(v);
         initPhotoView(v);
+
         return v;
     }
 
@@ -99,6 +101,8 @@ public class CrimeFragment extends Fragment {
                 dialog.show(fm, DIALOG_IMAGE);
             }
         });
+
+        registerForContextMenu(mPhotoView);
     }
 
     private void initPhotoButton(View v) {
@@ -195,6 +199,25 @@ public class CrimeFragment extends Fragment {
     }
 
     @Override
+    public void onCreateContextMenu(ContextMenu menu, View v, ContextMenu.ContextMenuInfo menuInfo) {
+        getActivity().getMenuInflater().inflate(R.menu.crime_list_item_context, menu);
+        super.onCreateContextMenu(menu, v, menuInfo);
+    }
+
+    @Override
+    public boolean onContextItemSelected(MenuItem item) {
+        final int id = item.getItemId();
+        switch (id) {
+            case R.id.menu_item_delete_crime :
+                PictureUtils.cleanImageView(mPhotoView);
+                return isSuccessDeletePhotoFile();
+            default:
+                return super.onContextItemSelected(item);
+        }
+    }
+
+
+    @Override
     public void onStart() {
         super.onStart();
         showPhotos();
@@ -247,6 +270,7 @@ public class CrimeFragment extends Fragment {
             mCrime.setDate(date);
             updateDate();
         }else if (requestCode == REQUEST_PHOTO) {
+            boolean isDeleted = isSuccessDeletePhotoFile();
             String filename = data.getStringExtra(CrimeCameraFragment.EXTRA_PHOTO_FILENAME);
             int rotation = data.getIntExtra(CrimeCameraFragment.EXTRA_PHOTO_ROTATION, Surface.ROTATION_90);
             Photo photo = new Photo(filename, rotation);
@@ -254,6 +278,12 @@ public class CrimeFragment extends Fragment {
             showPhotos();
         }
         super.onActivityResult(requestCode, resultCode, data);
+    }
+
+    private boolean isSuccessDeletePhotoFile() {
+        Photo beforePhoto = mCrime.getPhoto();
+        return (beforePhoto == null ||
+                getActivity().getFileStreamPath(beforePhoto.getFilename()).delete());
     }
 
     @Override
