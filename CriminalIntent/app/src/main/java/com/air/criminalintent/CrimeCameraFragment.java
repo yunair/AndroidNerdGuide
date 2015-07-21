@@ -4,15 +4,21 @@ import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
 import android.hardware.Camera;
+import android.hardware.SensorManager;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
 import android.util.Log;
+import android.view.Display;
 import android.view.LayoutInflater;
+import android.view.OrientationEventListener;
+import android.view.Surface;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.WindowManager;
 import android.widget.Button;
+import android.widget.Toast;
 
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -31,35 +37,13 @@ public class CrimeCameraFragment extends Fragment {
     private static final String TAG = "CrimeCameraFragment";
     public static final String EXTRA_PHOTO_FILENAME =
             "com.air.criminalintent.photo_filename";
-    // the fragment initialization parameters, e.g. ARG_ITEM_NUMBER
-    private static final String ARG_PARAM1 = "param1";
-    private static final String ARG_PARAM2 = "param2";
-
-    // TODO: Rename and change types of parameters
-    private String mParam1;
-    private String mParam2;
-
+    public static final String EXTRA_PHOTO_ROTATION =
+            "com.air.criminalintent.photo_rotation";
     private Camera mCamera;
     private SurfaceView mSurfaceView;
     private View mProgressContainer;
-    /**
-     * Use this factory method to create a new instance of
-     * this fragment using the provided parameters.
-     *
-     * @param param1 Parameter 1.
-     * @param param2 Parameter 2.
-     * @return A new instance of fragment CrimeCameraFragment.
-     */
-    // TODO: Rename and change types and number of parameters
-    public static CrimeCameraFragment newInstance(String param1, String param2) {
-        CrimeCameraFragment fragment = new CrimeCameraFragment();
-        Bundle args = new Bundle();
-        args.putString(ARG_PARAM1, param1);
-        args.putString(ARG_PARAM2, param2);
-        fragment.setArguments(args);
-        return fragment;
-    }
-
+    private OrientationEventListener mOrientationEventListener;
+    private int rotation;
     public CrimeCameraFragment() {
         // Required empty public constructor
     }
@@ -67,9 +51,30 @@ public class CrimeCameraFragment extends Fragment {
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        if (getArguments() != null) {
-            mParam1 = getArguments().getString(ARG_PARAM1);
-            mParam2 = getArguments().getString(ARG_PARAM2);
+
+        mOrientationEventListener = new OrientationEventListener(getActivity(),
+                SensorManager.SENSOR_DELAY_NORMAL) {
+            @Override
+            public void onOrientationChanged(int orientation) {
+                if(orientation > 45 && orientation < 135){
+                    rotation = Surface.ROTATION_270;
+                }else if(orientation > 135 && orientation < 225){
+                    rotation = Surface.ROTATION_180;
+                }else if(orientation > 225 && orientation < 315){
+                    rotation = Surface.ROTATION_90;
+                }else {
+                    rotation = Surface.ROTATION_0;
+                }
+            }
+        };
+
+
+        if (mOrientationEventListener.canDetectOrientation()) {
+            Log.d(TAG, "Can detect orientation");
+            mOrientationEventListener.enable();
+        } else {
+            Log.d(TAG, "Cannot detect orientation");
+            mOrientationEventListener.disable();
         }
     }
 
@@ -215,6 +220,7 @@ public class CrimeCameraFragment extends Fragment {
             if(isSuccess){
                 Intent intent = new Intent();
                 intent.putExtra(EXTRA_PHOTO_FILENAME, filename);
+                intent.putExtra(EXTRA_PHOTO_ROTATION, rotation);
                 getActivity().setResult(Activity.RESULT_OK, intent);
             }else {
                 getActivity().setResult(Activity.RESULT_CANCELED);
@@ -246,6 +252,7 @@ public class CrimeCameraFragment extends Fragment {
     public void onResume() {
         super.onResume();
         mCamera = Camera.open(0);
+
     }
 
 
@@ -253,6 +260,7 @@ public class CrimeCameraFragment extends Fragment {
     public void onPause() {
         super.onPause();
         stopPreviewAndFreeCamera();
+        mOrientationEventListener.disable();
     }
 
     @Override

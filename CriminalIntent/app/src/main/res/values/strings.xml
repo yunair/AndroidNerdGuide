@@ -15,8 +15,6 @@
     <string name="subtitle">If you see something, say something.</string>
     <string name="delete_crime">Delete</string>
 
-<!-- TODO: Remove or change this placeholder text -->
-    <string name="hello_blank_fragment">Hello blank fragment</string>
     <string name="crimes_title">Crimes</string>
     <string name="date_picker_title">Date of Crime:</string>
     <string name="title_activity_single_fragment">SingleFragmentActivity</string>
@@ -24,4 +22,5 @@
     <string name="no_crime">There are no crimes</string>
     <string name="add_crime">Add Crime</string>
     <string name="take">Take!</string>
+    <string name="pic">Picture</string>
 </resources>

@@ -4,18 +4,20 @@ import android.annotation.TargetApi;
 import android.app.Activity;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.graphics.drawable.BitmapDrawable;
 import android.hardware.Camera;
 import android.os.Build;
 import android.os.Bundle;
+import android.support.annotation.NonNull;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
 import android.support.v4.app.NavUtils;
 import android.text.Editable;
 import android.text.TextWatcher;
 import android.text.format.DateFormat;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.MenuItem;
+import android.view.Surface;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
@@ -23,9 +25,12 @@ import android.widget.CheckBox;
 import android.widget.CompoundButton;
 import android.widget.EditText;
 import android.widget.ImageButton;
+import android.widget.ImageView;
 
 import com.air.criminalintent.model.Crime;
 import com.air.criminalintent.model.CrimeLab;
+import com.air.criminalintent.model.Photo;
+import com.air.criminalintent.util.PictureUtils;
 
 import java.util.Date;
 import java.util.UUID;
@@ -37,6 +42,7 @@ public class CrimeFragment extends Fragment {
     private static final String TAG = "CrimeFragment";
     public static final String EXTRA_CRIME_ID = "com.air.criminalintent.crime_id";
     private static final String DIALOG_DATE = "date";
+    private static final String DIALOG_IMAGE = "image";
     private static final int REQUEST_DATE = 0;
     private static final int REQUEST_PHOTO = 1;
     private static final int RESULT_DATE = 10;
@@ -45,6 +51,7 @@ public class CrimeFragment extends Fragment {
     private EditText mTitleField;
     private Button mDateButton;
     private ImageButton mPhotoButton;
+    private ImageView mPhotoView;
     private CheckBox mSolvedCheckBox;
 
     public static CrimeFragment newInstance(UUID crimeId){
@@ -74,8 +81,24 @@ public class CrimeFragment extends Fragment {
         initDateButton(v);
         initSolvedCheckBox(v);
         initPhotoButton(v);
-
+        initPhotoView(v);
         return v;
+    }
+
+    private void initPhotoView(View v) {
+        mPhotoView = (ImageView) v.findViewById(R.id.crime_image_view);
+        mPhotoView.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                Photo p = mCrime.getPhoto();
+                if(p == null) return;
+
+                FragmentManager fm = getActivity().getSupportFragmentManager();
+                ImageFragment dialog = ImageFragment.newInstance(getPhotoPath(p), p.getRotation());
+//                dialog.setTargetFragment(CrimeFragment.this, REQUEST_DATE);
+                dialog.show(fm, DIALOG_IMAGE);
+            }
+        });
     }
 
     private void initPhotoButton(View v) {
@@ -146,6 +169,42 @@ public class CrimeFragment extends Fragment {
         mDateButton.setText(formatDate);
     }
 
+    private void showPhotos(){
+        // (Re)set the image button's image based on our photo
+        Photo p = mCrime.getPhoto();
+
+        BitmapDrawable bitmapDrawable;
+        if(p != null){
+            String path = getPhotoPath(p);
+            bitmapDrawable = PictureUtils.getScaledDrawable(getActivity(), path);
+            //Surface.ROTATION_90为正常横屏
+            if(p.getRotation() == Surface.ROTATION_0) {
+                mPhotoView.setRotation(90);
+            }else if(p.getRotation() == Surface.ROTATION_270){
+                mPhotoView.setRotation(180);
+            }else if(p.getRotation() == Surface.ROTATION_180){
+                mPhotoView.setRotation(270);
+            }
+            mPhotoView.setImageDrawable(bitmapDrawable);
+        }
+    }
+
+    @NonNull
+    private String getPhotoPath(Photo p) {
+        return getActivity().getFileStreamPath(p.getFilename()).getPath();
+    }
+
+    @Override
+    public void onStart() {
+        super.onStart();
+        showPhotos();
+    }
+
+    @Override
+    public void onStop() {
+        super.onStop();
+        PictureUtils.cleanImageView(mPhotoView);
+    }
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -189,7 +248,10 @@ public class CrimeFragment extends Fragment {
             updateDate();
         }else if (requestCode == REQUEST_PHOTO) {
             String filename = data.getStringExtra(CrimeCameraFragment.EXTRA_PHOTO_FILENAME);
-            Log.d(TAG, "filename : " + filename);
+            int rotation = data.getIntExtra(CrimeCameraFragment.EXTRA_PHOTO_ROTATION, Surface.ROTATION_90);
+            Photo photo = new Photo(filename, rotation);
+            mCrime.setPhoto(photo);
+            showPhotos();
         }
         super.onActivityResult(requestCode, resultCode, data);
     }
