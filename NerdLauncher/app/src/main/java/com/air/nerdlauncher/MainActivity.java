@@ -3,7 +3,7 @@ package com.air.nerdlauncher;
 
 import android.app.Fragment;
 
-public class MainActivity extends SingleFragmentActivity {
+public class MainActivity extends SingleFragmentActivity{
 
 
     @Override
