@@ -9,6 +9,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
 import android.widget.GridView;
+import android.widget.ImageView;
 
 import java.util.List;
 
@@ -39,8 +40,7 @@ public class PhotoGalleryFragment extends Fragment {
     private void setupAdapter() {
         if (getActivity() == null || mGridView == null) return;
         if (mItems != null) {
-            mGridView.setAdapter(new ArrayAdapter<GalleryItem>(getActivity(),
-                    android.R.layout.simple_gallery_item, mItems));
+            mGridView.setAdapter(new GalleryItemAdapter(mItems));
         } else {
             mGridView.setAdapter(null);
         }
@@ -49,7 +49,7 @@ public class PhotoGalleryFragment extends Fragment {
     private class FetchItemsTask extends AsyncTask<Void,Void,List<GalleryItem>> {
         @Override
         protected List<GalleryItem> doInBackground(Void... params) {
-            return new FlickFetch().fetchItems();
+            return new FlickrFetch().fetchItems();
         }
 
         @Override
@@ -60,4 +60,31 @@ public class PhotoGalleryFragment extends Fragment {
     }
 
 
+    private class GalleryItemAdapter extends ArrayAdapter<GalleryItem> {
+        public GalleryItemAdapter(List<GalleryItem> items) {
+            super(getActivity(), 0, items);
+        }
+
+        @Override
+        public View getView(int position, View convertView, ViewGroup parent) {
+            ViewHolder holder;
+            if (convertView == null) {
+                convertView = getActivity().getLayoutInflater()
+                        .inflate(R.layout.gallery_item, parent, false);
+                holder = new ViewHolder();
+                holder.imageView = (ImageView)convertView
+                        .findViewById(R.id.gallery_item_image_view);
+            }else {
+                holder = (ViewHolder) convertView.getTag();
+            }
+
+            holder.imageView.setImageResource(R.drawable.brian_up_close);
+            convertView.setTag(holder);
+            return convertView;
+        }
+
+        class ViewHolder{
+            ImageView imageView;
+        }
+    }
 }

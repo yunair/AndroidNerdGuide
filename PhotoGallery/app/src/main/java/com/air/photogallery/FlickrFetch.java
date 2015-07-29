@@ -16,13 +16,15 @@ import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
 
+import javax.net.ssl.HttpsURLConnection;
+
 /**
  * Created by Air on 15/7/29.
  */
-public class FlickFetch {
+public class FlickrFetch {
     public static final String TAG = "FlickrFetchr";
-    private static final String ENDPOINT = "http://api.flickr.com/services/rest/";
-    private static final String API_KEY = "4f721bgafa75bf6d2cb9af54f937bb70";
+    private static final String ENDPOINT = "https://api.flickr.com/services/rest/";
+    private static final String API_KEY = "b49634b1a68d767b4a2dd3f7a4c38807";
     private static final String METHOD_GET_RECENT = "flickr.photos.getRecent";
     private static final String PARAM_EXTRAS = "extras";
     // Specifying the url_s extra tells Flickr to include the URL for the small version of the picture if it is available.
@@ -31,10 +33,13 @@ public class FlickFetch {
     private static final String XML_PHOTO = "photo";
 
     byte[] getUrlBytes(String urlSpec) throws IOException {
-        HttpURLConnection urlConnection = null;
+        HttpsURLConnection urlConnection = null;
+//        HttpURLConnection urlConnection = null;
         try {
+
             URL url = new URL(urlSpec);
-            urlConnection = (HttpURLConnection) url.openConnection();
+            urlConnection = (HttpsURLConnection) url.openConnection();
+            urlConnection.setConnectTimeout(1000 * 1000 * 60);
             ByteArrayOutputStream out = new ByteArrayOutputStream();
             InputStream in = urlConnection.getInputStream();
 
