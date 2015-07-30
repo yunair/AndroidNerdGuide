@@ -1,9 +1,12 @@
 package com.air.photogallery;
 
 import android.app.Fragment;
+import android.graphics.Bitmap;
 import android.os.AsyncTask;
 import android.os.Bundle;
+import android.os.Handler;
 import android.support.annotation.Nullable;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -21,11 +24,26 @@ public class PhotoGalleryFragment extends Fragment {
     private GridView mGridView;
     List<GalleryItem> mItems;
 
+    ThumbnailDownloader<ImageView> mThumbnailThread;
+
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setRetainInstance(true);
         new FetchItemsTask().execute();
+
+        mThumbnailThread = new ThumbnailDownloader<>(new Handler());
+        mThumbnailThread.setListener(new ThumbnailDownloader.Listener<ImageView>() {
+            @Override
+            public void onThumbnailDownloaded(ImageView imageView, Bitmap thumbnail) {
+                if(isVisible()) {
+                    imageView.setImageBitmap(thumbnail);
+                }
+            }
+        });
+        mThumbnailThread.start();
+        mThumbnailThread.getLooper();
+        Log.i(TAG, "Background thread started");
     }
 
     @Nullable
@@ -39,6 +57,7 @@ public class PhotoGalleryFragment extends Fragment {
 
     private void setupAdapter() {
         if (getActivity() == null || mGridView == null) return;
+
         if (mItems != null) {
             mGridView.setAdapter(new GalleryItemAdapter(mItems));
         } else {
@@ -77,6 +96,8 @@ public class PhotoGalleryFragment extends Fragment {
             }else {
                 holder = (ViewHolder) convertView.getTag();
             }
+            final GalleryItem item = mItems.get(position);
+            mThumbnailThread.queueThumbnail(holder.imageView, item.getUrl());
 
             holder.imageView.setImageResource(R.drawable.brian_up_close);
             convertView.setTag(holder);
@@ -86,5 +107,18 @@ public class PhotoGalleryFragment extends Fragment {
         class ViewHolder{
             ImageView imageView;
         }
+    }
+
+    @Override
+    public void onDestroyView() {
+        super.onDestroyView();
+        mThumbnailThread.clearQueue();
+    }
+
+    @Override
+    public void onDestroy() {
+        super.onDestroy();
+        mThumbnailThread.quit();
+        Log.i(TAG, "Background thread destroyed");
     }
 }
