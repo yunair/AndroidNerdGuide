@@ -45,24 +45,32 @@ public class ThumbnailDownloader<Token> extends HandlerThread{
             final String url = requestMap.get(token);
             if (url == null)
                 return;
+
             final Bitmap tmpBitmap = getBitmapFromMemCache(token);
-            if(tmpBitmap != null){
-                mTokenListener.onThumbnailDownloaded(token, tmpBitmap);
-            }else{
+            final Bitmap bitmap;
+            if(tmpBitmap == null){
                 byte[] bitmapBytes = new FlickrFetch().getUrlBytes(url);
-                final Bitmap bitmap = BitmapFactory
+                bitmap = BitmapFactory
                         .decodeByteArray(bitmapBytes, 0, bitmapBytes.length);
                 addBitmapToMemoryCache(token, bitmap);
-                Log.i(TAG, "Bitmap created");
-
                 mResponseHandler.post(new Runnable() {
                     public void run() {
-                        if (!requestMap.get(token).equals(url))
+                        if (requestMap.get(token) == null)
                             return;
                         requestMap.remove(token);
                         mTokenListener.onThumbnailDownloaded(token, bitmap);
                     }
                 });
+                Log.i(TAG, "Bitmap created");
+
+            }else {
+                bitmap = tmpBitmap;
+                mResponseHandler.post(new Runnable() {
+                    public void run() {
+                        mTokenListener.onThumbnailDownloaded(token, bitmap);
+                    }
+                });
+                Log.i(TAG, "Bitmap get");
             }
 
         } catch (IOException ioe) {
