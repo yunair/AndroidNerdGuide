@@ -22,8 +22,9 @@ import javax.net.ssl.HttpsURLConnection;
  * Created by Air on 15/7/29.
  */
 public class FlickrFetch {
-    public static final String TAG = "FlickrFetchr";
+    public static final String TAG = "FlickrFetch";
     public static final String PREF_SEARCH_QUERY = "searchQuery";
+    public static final String PREF_LAST_RESULT_ID = "lastResultId";
 
     private static final String ENDPOINT = "https://api.flickr.com/services/rest/";
     private static final String API_KEY = "b49634b1a68d767b4a2dd3f7a4c38807";
@@ -35,12 +36,12 @@ public class FlickrFetch {
     private static final String EXTRA_SMALL_URL = "url_s";
 
     private static final String XML_PHOTO = "photo";
+    private static final String XML_PHOTOS = "photos";
 
+    public String total;
     byte[] getUrlBytes(String urlSpec) throws IOException {
         HttpsURLConnection urlConnection = null;
-//        HttpURLConnection urlConnection = null;
         try {
-
             URL url = new URL(urlSpec);
             urlConnection = (HttpsURLConnection) url.openConnection();
             urlConnection.setConnectTimeout(1000 * 1000 * 60);
@@ -49,7 +50,7 @@ public class FlickrFetch {
 
             if(urlConnection.getResponseCode() != HttpURLConnection.HTTP_OK) return  null;
 
-            int bytesRead = 0;
+            int bytesRead;
             byte[] buffer = new byte[1024];
             while ((bytesRead = in.read(buffer)) > 0){
                 out.write(buffer, 0, bytesRead);
@@ -110,6 +111,7 @@ public class FlickrFetch {
             throws XmlPullParserException, IOException {
         int eventType = parser.next();
         while (eventType != XmlPullParser.END_DOCUMENT) {
+            parseTotal(parser, eventType);
             if (eventType == XmlPullParser.START_TAG &&
                     XML_PHOTO.equals(parser.getName())) {
                 String id = parser.getAttributeValue(null, "id");
@@ -124,5 +126,14 @@ public class FlickrFetch {
             eventType = parser.next();
         }
     }
+
+    void parseTotal(XmlPullParser parser, final int eventType){
+        if (eventType == XmlPullParser.START_TAG &&
+                XML_PHOTOS.equals(parser.getName())){
+            total = parser.getAttributeValue(null, "total");
+        }
+
+    }
+
 
 }

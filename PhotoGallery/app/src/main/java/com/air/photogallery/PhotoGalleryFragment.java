@@ -2,6 +2,10 @@ package com.air.photogallery;
 
 import android.app.Activity;
 import android.app.Fragment;
+import android.app.SearchManager;
+import android.app.SearchableInfo;
+import android.content.ComponentName;
+import android.content.Context;
 import android.graphics.Bitmap;
 import android.os.AsyncTask;
 import android.os.Bundle;
@@ -19,6 +23,7 @@ import android.widget.ArrayAdapter;
 import android.widget.GridView;
 import android.widget.ImageView;
 import android.widget.SearchView;
+import android.widget.Toast;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -30,7 +35,7 @@ public class PhotoGalleryFragment extends Fragment {
     private static final String TAG = "PhotoGalleryFragment";
     private GridView mGridView;
     List<GalleryItem> mItems;
-
+    String query;
     ThumbnailDownloader<ImageView> mThumbnailThread;
 
     @Override
@@ -39,6 +44,7 @@ public class PhotoGalleryFragment extends Fragment {
         setRetainInstance(true);
         setHasOptionsMenu(true);
         updateItems();
+
 
         mThumbnailThread = new ThumbnailDownloader<>(new Handler());
         mThumbnailThread.setListener(new ThumbnailDownloader.Listener<ImageView>() {
@@ -78,25 +84,32 @@ public class PhotoGalleryFragment extends Fragment {
     }
 
     private class FetchItemsTask extends AsyncTask<Void,Void,List<GalleryItem>> {
+        private FlickrFetch mFlickrFetch;
+
+        public FetchItemsTask(){
+            mFlickrFetch = new FlickrFetch();
+
+        }
         @Override
         protected List<GalleryItem> doInBackground(Void... params) {
             Activity activity = getActivity();
             if(activity == null)
                 return new ArrayList<GalleryItem>();
 
-            String query = PreferenceManager.getDefaultSharedPreferences(activity)
+            query = PreferenceManager.getDefaultSharedPreferences(activity)
                     .getString(FlickrFetch.PREF_SEARCH_QUERY, null);
 
             if (query != null) {
-                return new FlickrFetch().search(query);
+                return mFlickrFetch.search(query);
             } else {
-                return new FlickrFetch().fetchItems();
+                return mFlickrFetch.fetchItems();
             }
         }
 
         @Override
         protected void onPostExecute(List<GalleryItem> items) {
             mItems = items;
+            Toast.makeText(getActivity(), mFlickrFetch.total, Toast.LENGTH_SHORT).show();
             setupAdapter();
         }
     }
@@ -109,26 +122,46 @@ public class PhotoGalleryFragment extends Fragment {
         MenuItem searchItem = menu.findItem(R.id.menu_item_search);
         SearchView searchView = (SearchView)searchItem.getActionView();
         // Get the data from our searchable.xml as a SearchableInfo
-        /*SearchManager searchManager = (SearchManager)getActivity()
+        SearchManager searchManager = (SearchManager)getActivity()
                 .getSystemService(Context.SEARCH_SERVICE);
         ComponentName name = getActivity().getComponentName();
         SearchableInfo searchInfo = searchManager.getSearchableInfo(name);
-        searchView.setSearchableInfo(searchInfo);*/
+        searchView.setSearchableInfo(searchInfo);
     }
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
         switch (item.getItemId()) {
             case R.id.menu_item_search:
-                getActivity().onSearchRequested();
+//                getActivity().onSearchRequested();
+                getActivity().startSearch(query, true, null, false);
+
                 return true;
             case R.id.menu_item_clear:
                 SharedPreferencesUtil.commitString(getActivity(), FlickrFetch.PREF_SEARCH_QUERY, null);
                 updateItems();
                 return true;
+            case R.id.menu_item_toggle_polling:
+                boolean shouldStartAlarm = !PollService.isServiceAlarmOn(getActivity());
+                PollService.setServiceAlarm(getActivity(), shouldStartAlarm);
+
+                getActivity().invalidateOptionsMenu();
+                return true;
             default:
                 return super.onOptionsItemSelected(item);
-        } }
+        }
+    }
 
+    @Override
+    public void onPrepareOptionsMenu(Menu menu) {
+        super.onPrepareOptionsMenu(menu);
+
+        MenuItem item = menu.findItem(R.id.menu_item_toggle_polling);
+        if(PollService.isServiceAlarmOn(getActivity())) {
+            item.setTitle(R.string.stop_polling);
+        }else {
+            item.setTitle(R.string.start_polling);
+        }
+    }
 
     @Override
     public void onDestroyView() {
