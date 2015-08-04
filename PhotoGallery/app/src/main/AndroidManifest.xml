@@ -4,6 +4,12 @@
 
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+    <uses-permission android:name="com.air.android.photogallery.PRIVATE" />
+
+    <permission
+        android:name="com.air.android.photogallery.PRIVATE"
+        android:protectionLevel="signature" />
 
     <application
         android:allowBackup="true"
@@ -32,6 +38,25 @@
             android:name=".PollService"
             android:exported="false" >
         </service>
+
+        <receiver
+            android:name=".StartupReceiver"
+            android:enabled="true"
+            android:exported="true" >
+            <intent-filter>
+                <action android:name="ANDROID.INTENT.ACTION.BOOT_COMPLETED" />
+            </intent-filter>
+        </receiver>
+        <receiver
+            android:name=".NotificationReceiver"
+            android:enabled="true"
+            android:exported="false" >
+            <intent-filter
+                android:priority="-999">
+                <action android:name="com.air.android.photogallery.SHOW_NOTIFICATION" />
+
+            </intent-filter>
+        </receiver>
     </application>
 
 </manifest>

@@ -17,4 +17,8 @@ public class SharedPreferencesUtil {
         getSharedPreferencesEditor(context).putString(key, str).commit();
     }
 
+    public static void commitBoolean(Context context, String key, boolean is){
+        getSharedPreferencesEditor(context).putBoolean(key, is).commit();
+    }
+
 }

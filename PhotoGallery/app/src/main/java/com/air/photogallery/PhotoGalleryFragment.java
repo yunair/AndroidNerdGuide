@@ -1,7 +1,6 @@
 package com.air.photogallery;
 
 import android.app.Activity;
-import android.app.Fragment;
 import android.app.SearchManager;
 import android.app.SearchableInfo;
 import android.content.ComponentName;
@@ -31,7 +30,7 @@ import java.util.List;
 /**
  * Created by Air on 15/7/29.
  */
-public class PhotoGalleryFragment extends Fragment {
+public class PhotoGalleryFragment extends VisibleFragment {
     private static final String TAG = "PhotoGalleryFragment";
     private GridView mGridView;
     List<GalleryItem> mItems;

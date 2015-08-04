@@ -1,9 +1,9 @@
 package com.air.photogallery;
 
+import android.app.Activity;
 import android.app.AlarmManager;
 import android.app.IntentService;
 import android.app.Notification;
-import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
@@ -24,7 +24,17 @@ import java.util.List;
 public class PollService extends IntentService {
     private static final String TAG = "PollService";
 
-    private static final int POLL_INTERVAL = 1000 * 5 * 60; // 15 seconds
+    private static final int POLL_INTERVAL = 1000 * 5;
+//            * 60; // 5 minute
+    public static final String PREF_IS_ALARM_ON = "isAlarmOn";
+
+    public static final String ACTION_SHOW_NOTIFICATION =
+            "com.air.android.photogallery.SHOW_NOTIFICATION";
+
+    public static final String PERM_PRIVATE =
+            "com.air.android.photogallery.PRIVATE";
+
+
 
     public PollService() {
         super("PollService");
@@ -54,6 +64,7 @@ public class PollService extends IntentService {
             String resultId = items.get(0).getId();
             if (!resultId.equals(lastResultId)) {
                 Log.i(TAG, "Got a new result: " + resultId);
+                sendBroadcast(new Intent(ACTION_SHOW_NOTIFICATION), PERM_PRIVATE);
                 notifyUserByNotification();
             } else {
                 Log.i(TAG, "Got an old result: " + resultId);
@@ -61,6 +72,7 @@ public class PollService extends IntentService {
             prefs.edit()
                     .putString(FlickrFetch.PREF_LAST_RESULT_ID, resultId)
                     .apply();
+
         }
     }
 
@@ -77,13 +89,15 @@ public class PollService extends IntentService {
                 .setAutoCancel(true)
                 .build();
 
-        NotificationManager nm = (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
+//        NotificationManager nm = (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
 
         // The integer parameter you pass in is an identifier for your notification.
         // It should be unique across your application.
         // If you post a second notification with this same ID,
         // it will replace the last notification you posted with that ID.
-        nm.notify(1, notification);
+//        nm.notify(1, notification);
+
+        showBackgroundNotification(0, notification);
     }
 
     private String getStringByResources(@StringRes int str) {
@@ -103,12 +117,22 @@ public class PollService extends IntentService {
             am.cancel(pi);
             pi.cancel();
         }
+
+        SharedPreferencesUtil.commitBoolean(context, PREF_IS_ALARM_ON, isOn);
     }
 
     public static boolean isServiceAlarmOn(Context context) {
         Intent intent = new Intent(context, PollService.class);
         PendingIntent pi = PendingIntent.getService(context, 0, intent, PendingIntent.FLAG_NO_CREATE);
         return pi != null;
+    }
+
+    void showBackgroundNotification(int requestCode, Notification notification) {
+        Intent i = new Intent(ACTION_SHOW_NOTIFICATION);
+        i.putExtra("REQUEST_CODE", requestCode);
+        i.putExtra("NOTIFICATION", notification);
+        sendOrderedBroadcast(i, PERM_PRIVATE, null, null,
+                Activity.RESULT_OK, null, null);
     }
 
 }

@@ -28,7 +28,7 @@ public class ThumbnailDownloader<Token> extends HandlerThread{
     private Handler mResponseHandler;
     Listener<Token> mTokenListener;
 
-    LruCache<Token, Bitmap> mTokenBitmapLruCache;
+    LruCache<String, Bitmap> mTokenBitmapLruCache;
 
     public interface Listener<Token>{
         void onThumbnailDownloaded(Token token, Bitmap thumbnail);
@@ -46,13 +46,13 @@ public class ThumbnailDownloader<Token> extends HandlerThread{
             if (url == null)
                 return;
 
-            final Bitmap tmpBitmap = getBitmapFromMemCache(token);
+            final Bitmap tmpBitmap = getBitmapFromMemCache(url);
             final Bitmap bitmap;
             if(tmpBitmap == null){
                 byte[] bitmapBytes = new FlickrFetch().getUrlBytes(url);
                 bitmap = BitmapFactory
                         .decodeByteArray(bitmapBytes, 0, bitmapBytes.length);
-                addBitmapToMemoryCache(token, bitmap);
+                addBitmapToMemoryCache(url, bitmap);
                 mResponseHandler.post(new Runnable() {
                     public void run() {
                         if (requestMap.get(token) == null)
@@ -78,7 +78,7 @@ public class ThumbnailDownloader<Token> extends HandlerThread{
         }
     }
 
-    @SuppressLint("HandlerLeaks")
+    @SuppressLint("HandlerLeak")
     @Override
     protected void onLooperPrepared() {
         mHandler = new Handler() {
@@ -121,13 +121,13 @@ public class ThumbnailDownloader<Token> extends HandlerThread{
         requestMap.clear();
     }
 
-    public void addBitmapToMemoryCache(Token key, Bitmap bitmap) {
+    public void addBitmapToMemoryCache(String key, Bitmap bitmap) {
         if (getBitmapFromMemCache(key) == null) {
             mTokenBitmapLruCache.put(key, bitmap);
         }
     }
 
-    public Bitmap getBitmapFromMemCache(Token key) {
+    public Bitmap getBitmapFromMemCache(String key) {
         return mTokenBitmapLruCache.get(key);
     }
 

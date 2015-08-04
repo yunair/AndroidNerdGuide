@@ -38,7 +38,7 @@ public class FlickrFetch {
     private static final String XML_PHOTO = "photo";
     private static final String XML_PHOTOS = "photos";
 
-    public String total;
+    public String total = " ";
     byte[] getUrlBytes(String urlSpec) throws IOException {
         HttpsURLConnection urlConnection = null;
         try {
