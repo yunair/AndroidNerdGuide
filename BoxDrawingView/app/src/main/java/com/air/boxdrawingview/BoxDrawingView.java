@@ -6,6 +6,7 @@ import android.graphics.Paint;
 import android.graphics.PointF;
 import android.os.Bundle;
 import android.os.Parcelable;
+import android.support.annotation.NonNull;
 import android.util.AttributeSet;
 import android.util.Log;
 import android.view.MotionEvent;
@@ -63,7 +64,7 @@ public class BoxDrawingView extends View {
     }
 
     @Override
-    public boolean onTouchEvent(MotionEvent event) {
+    public boolean onTouchEvent(@NonNull MotionEvent event) {
         PointF curr = new PointF(event.getX(), event.getY());
 
         Log.i(TAG, "Received event at x=" + curr.x +
@@ -124,7 +125,8 @@ public class BoxDrawingView extends View {
                 for (int i = 0; i < parcels.length; i++) {
                     boxes[i] = (Box) parcels[i];
                 }
-                mBoxes = Arrays.asList(boxes);
+                //Arrays.asList return a fixed-size list
+                mBoxes = new ArrayList<>(Arrays.asList(boxes));
                 invalidate();
             }
             this.stateToSave = bundle.getInt("stateToSave");
