@@ -4,6 +4,8 @@ import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.graphics.PointF;
+import android.os.Bundle;
+import android.os.Parcelable;
 import android.util.AttributeSet;
 import android.util.Log;
 import android.view.MotionEvent;
@@ -12,6 +14,7 @@ import android.view.View;
 import com.air.boxdrawingview.model.Box;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -24,6 +27,8 @@ public class BoxDrawingView extends View {
     private List<Box> mBoxes = new ArrayList<Box>();
     private Paint mBoxPaint;
     private Paint mBackgroundPaint;
+
+    private int stateToSave;
 
 
     // Used when creating the view in code
@@ -71,6 +76,14 @@ public class BoxDrawingView extends View {
                 mCurrentBox = new Box(curr);
                 mBoxes.add(mCurrentBox);
                 break;
+            case MotionEvent.ACTION_POINTER_DOWN:
+                final int count = event.getPointerCount();
+                Log.w(TAG, "count : " + count);
+                final int index = event.getActionIndex();
+                final int mask = event.getActionMasked();
+                final int id = event.getPointerId(index);
+                Log.w(TAG, "index : " + index + "\nid : " + id + "\n mask : " + mask);
+                break;
             case MotionEvent.ACTION_MOVE:
                 Log.i(TAG, "  ACTION_MOVE");
                 if(mCurrentBox != null){
@@ -89,5 +102,34 @@ public class BoxDrawingView extends View {
         }
 
         return true;
+    }
+
+    @Override
+    protected Parcelable onSaveInstanceState() {
+        Bundle bundle = new Bundle();
+        bundle.putParcelable("instanceState", super.onSaveInstanceState());
+        bundle.putInt("stateToSave", this.stateToSave);
+        bundle.putParcelableArray(TAG, mBoxes.toArray(new Parcelable[mBoxes.size()]));
+        super.onSaveInstanceState();
+        return bundle;
+    }
+
+    @Override
+    protected void onRestoreInstanceState(Parcelable state) {
+        if (state instanceof Bundle){
+            Bundle bundle = (Bundle) state;
+            Parcelable[] parcels = bundle.getParcelableArray(TAG);
+            if(parcels != null) {
+                Box[] boxes = new Box[parcels.length];
+                for (int i = 0; i < parcels.length; i++) {
+                    boxes[i] = (Box) parcels[i];
+                }
+                mBoxes = Arrays.asList(boxes);
+                invalidate();
+            }
+            this.stateToSave = bundle.getInt("stateToSave");
+            state = bundle.getParcelable("instanceState");
+        }
+        super.onRestoreInstanceState(state);
     }
 }
