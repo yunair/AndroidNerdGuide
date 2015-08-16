@@ -66,7 +66,7 @@ public class BoxDrawingView extends View {
             if(canRotate){
                 double value = calculateCosA(triangle);
                 double rotate = Math.acos(value) * 180;
-                Log.d(TAG, "value : " + rotate);
+//                Log.d(TAG, "value : " + rotate);
                 canvas.rotate((float) rotate);
             }
         }
