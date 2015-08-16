@@ -30,7 +30,9 @@ public class BoxDrawingView extends View {
     private Paint mBackgroundPaint;
 
     private int stateToSave;
-
+    private PointF[] trianglePoint;
+    private double[] triangle;
+    private boolean canRotate = false;
 
     // Used when creating the view in code
     public BoxDrawingView(Context context) {
@@ -45,6 +47,8 @@ public class BoxDrawingView extends View {
         // Paint the background off-white
         mBackgroundPaint = new Paint();
         mBackgroundPaint.setColor(0xfff8efe0);
+        triangle = new double[3];
+        trianglePoint = new PointF[3];
     }
 
     @Override
@@ -57,33 +61,50 @@ public class BoxDrawingView extends View {
             float right = Math.max(box.getOrigin().x, box.getCurrent().x);
             float top = Math.min(box.getOrigin().y, box.getCurrent().y);
             float bottom = Math.max(box.getOrigin().y, box.getCurrent().y);
-
             canvas.drawRect(left, top, right, bottom, mBoxPaint);
+
+            if(canRotate){
+                double value = calculateCosA(triangle);
+                double rotate = Math.acos(value) * 180;
+                Log.d(TAG, "value : " + rotate);
+                canvas.rotate((float) rotate);
+            }
         }
+
+
+
+
+
         super.onDraw(canvas);
     }
 
     @Override
     public boolean onTouchEvent(@NonNull MotionEvent event) {
         PointF curr = new PointF(event.getX(), event.getY());
-
-        Log.i(TAG, "Received event at x=" + curr.x +
-                ", y=" + curr.y + ":");
-
-        final int action = event.getAction();
+        final int action = event.getActionMasked();
         switch (action) {
             case MotionEvent.ACTION_DOWN:
                 Log.i(TAG, "  ACTION_DOWN");
+                canRotate = false;
                 mCurrentBox = new Box(curr);
                 mBoxes.add(mCurrentBox);
                 break;
             case MotionEvent.ACTION_POINTER_DOWN:
-                final int count = event.getPointerCount();
-                Log.w(TAG, "count : " + count);
-                final int index = event.getActionIndex();
-                final int mask = event.getActionMasked();
-                final int id = event.getPointerId(index);
-                Log.w(TAG, "index : " + index + "\nid : " + id + "\n mask : " + mask);
+                Log.w(TAG, "ACTION_POINTER_DOWN : curr : " + curr.x);
+                trianglePoint[1] = new PointF(event.getX(1), event.getY(1));
+                break;
+            case MotionEvent.ACTION_POINTER_UP:
+                Log.w(TAG, "ACTION_POINTER_UP : curr : " + curr.x);
+                PointF[] point = new PointF[2];
+                for (int i = 0; i < 2; i++) {
+                    point[i] = new PointF(event.getX(i), event.getY(i));
+                }
+
+                canRotate = true;
+                triangle[0] = distanceTwoPoints(trianglePoint[1] , point[0]);
+                triangle[1] = distanceTwoPoints(point[1], point[0]);
+                triangle[2] = distanceTwoPoints(trianglePoint[1] , point[1]);
+                invalidate();
                 break;
             case MotionEvent.ACTION_MOVE:
                 Log.i(TAG, "  ACTION_MOVE");
@@ -133,5 +154,28 @@ public class BoxDrawingView extends View {
             state = bundle.getParcelable("instanceState");
         }
         super.onRestoreInstanceState(state);
+    }
+
+    /**
+     * 计算两点之间的距离
+     * @param x
+     * @param y
+     * @return 两点之间的距离
+     */
+    private double distanceTwoPoints(PointF x, PointF y){
+        float disX = Math.abs(x.x - y.x);
+        float disY = Math.abs(x.y - y.y);
+        return Math.sqrt(disX * disX + disY * disY);
+    }
+
+    /**
+     * 余弦定理
+     * @param triangle
+     * @return cosA 的值
+     */
+    private double calculateCosA(double[] triangle){
+        double numerator = triangle[0] * triangle[0] + triangle[1] * triangle[1] - triangle[2] * triangle[2];
+        double denominator = 2 * triangle[0] * triangle[1];
+        return numerator / denominator;
     }
 }
