@@ -21,6 +21,8 @@ import com.air.runtracker.model.Run;
  */
 public class RunFragment extends Fragment {
     private static final String TAG = "RunFragment";
+    private static final String ARG_RUN_ID = "RUN_ID";
+    
     private Button mStartButton, mStopButton;
     private TextView mStartedTextView, mLatitudeTextView,
             mLongitudeTextView, mAltitudeTextView, mDurationTextView;
@@ -29,11 +31,30 @@ public class RunFragment extends Fragment {
     private Run mRun;
     private Location mLastLocation;
 
+    public static RunFragment newInstance(long runId) {
+
+        Bundle args = new Bundle();
+        args.putLong(ARG_RUN_ID, runId);
+
+        RunFragment fragment = new RunFragment();
+        fragment.setArguments(args);
+        return fragment;
+    }
+    
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setRetainInstance(true);
         mRunManager = RunManager.getInstance(getActivity());
+        // Check for a Run ID as an argument, and find the run
+        Bundle args = getArguments();
+        if(args != null) {
+            long runId = args.getLong(ARG_RUN_ID, -1);
+            if(runId != -1) {
+                mRun = mRunManager.getRun(runId);
+                mLastLocation = mRunManager.getLastLocationForRun(runId);
+            }
+        }
     }
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
@@ -48,8 +69,12 @@ public class RunFragment extends Fragment {
         mStartButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                mRunManager.startLocationUpdates();
-                mRun = new Run();
+//                mRunManager.startLocationUpdates();
+                if(mRun == null) {
+                    mRun = mRunManager.startNewRun();
+                }else {
+                    mRunManager.startTrackingRun(mRun);
+                }
                 updateUI();
             }
         });
@@ -57,7 +82,8 @@ public class RunFragment extends Fragment {
         mStopButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                mRunManager.stopLocationUpdates();
+//                mRunManager.stopLocationUpdates();
+                mRunManager.stopRun();
                 updateUI();
             }
         });
@@ -83,6 +109,8 @@ public class RunFragment extends Fragment {
 
     private void updateUI() {
         boolean started = mRunManager.isTrackingRun();
+        boolean trackingThisRun = mRunManager.isTrackingRun(mRun);
+
         if (mRun != null)
             mStartedTextView.setText(mRun.getStartDate().toString());
         int durationSeconds = 0;
@@ -95,12 +123,14 @@ public class RunFragment extends Fragment {
         mDurationTextView.setText(Run.formatDuration(durationSeconds));
 
         mStartButton.setEnabled(!started);
-        mStopButton.setEnabled(started);
+        mStopButton.setEnabled(started & trackingThisRun);
     }
 
     private BroadcastReceiver mReceiver = new LocationReceiver(){
         @Override
         protected void onLocationReceived(Context context, Location loc) {
+            if (!mRunManager.isTrackingRun(mRun))
+                return;
             Log.d(TAG, "Last Location");
             mLastLocation = loc;
             if(isVisible()){
