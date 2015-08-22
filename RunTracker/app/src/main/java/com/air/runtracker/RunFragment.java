@@ -1,9 +1,11 @@
 package com.air.runtracker;
 
 import android.app.Fragment;
+import android.app.LoaderManager;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.IntentFilter;
+import android.content.Loader;
 import android.location.Location;
 import android.os.Bundle;
 import android.util.Log;
@@ -22,7 +24,9 @@ import com.air.runtracker.model.Run;
 public class RunFragment extends Fragment {
     private static final String TAG = "RunFragment";
     private static final String ARG_RUN_ID = "RUN_ID";
-    
+    private static final int LOAD_RUN = 0;
+    private static final int LOAD_LOCATION = 1;
+
     private Button mStartButton, mStopButton;
     private TextView mStartedTextView, mLatitudeTextView,
             mLongitudeTextView, mAltitudeTextView, mDurationTextView;
@@ -40,7 +44,7 @@ public class RunFragment extends Fragment {
         fragment.setArguments(args);
         return fragment;
     }
-    
+
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -48,37 +52,39 @@ public class RunFragment extends Fragment {
         mRunManager = RunManager.getInstance(getActivity());
         // Check for a Run ID as an argument, and find the run
         Bundle args = getArguments();
-        if(args != null) {
+        if (args != null) {
             long runId = args.getLong(ARG_RUN_ID, -1);
-            if(runId != -1) {
-                mRun = mRunManager.getRun(runId);
-                mLastLocation = mRunManager.getLastLocationForRun(runId);
+            if (runId != -1) {
+                final LoaderManager loaderManager = getLoaderManager();
+                loaderManager.initLoader(LOAD_RUN, args, new RunLoaderCallbacks());
+                loaderManager.initLoader(LOAD_LOCATION, args, new LocationLoaderCallbacks());
             }
         }
     }
+
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.fragment_run, container, false);
-        mStartedTextView = (TextView)view.findViewById(R.id.run_startedTextView);
-        mLatitudeTextView = (TextView)view.findViewById(R.id.run_latitudeTextView);
-        mLongitudeTextView = (TextView)view.findViewById(R.id.run_longitudeTextView);
-        mAltitudeTextView = (TextView)view.findViewById(R.id.run_altitudeTextView);
-        mDurationTextView = (TextView)view.findViewById(R.id.run_durationTextView);
-        mStartButton = (Button)view.findViewById(R.id.run_startButton);
+        mStartedTextView = (TextView) view.findViewById(R.id.run_startedTextView);
+        mLatitudeTextView = (TextView) view.findViewById(R.id.run_latitudeTextView);
+        mLongitudeTextView = (TextView) view.findViewById(R.id.run_longitudeTextView);
+        mAltitudeTextView = (TextView) view.findViewById(R.id.run_altitudeTextView);
+        mDurationTextView = (TextView) view.findViewById(R.id.run_durationTextView);
+        mStartButton = (Button) view.findViewById(R.id.run_startButton);
         mStartButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
 //                mRunManager.startLocationUpdates();
-                if(mRun == null) {
+                if (mRun == null) {
                     mRun = mRunManager.startNewRun();
-                }else {
+                } else {
                     mRunManager.startTrackingRun(mRun);
                 }
                 updateUI();
             }
         });
-        mStopButton = (Button)view.findViewById(R.id.run_stopButton);
+        mStopButton = (Button) view.findViewById(R.id.run_stopButton);
         mStopButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -126,14 +132,14 @@ public class RunFragment extends Fragment {
         mStopButton.setEnabled(started & trackingThisRun);
     }
 
-    private BroadcastReceiver mReceiver = new LocationReceiver(){
+    private BroadcastReceiver mReceiver = new LocationReceiver() {
         @Override
         protected void onLocationReceived(Context context, Location loc) {
             if (!mRunManager.isTrackingRun(mRun))
                 return;
             Log.d(TAG, "Last Location");
             mLastLocation = loc;
-            if(isVisible()){
+            if (isVisible()) {
                 updateUI();
             }
         }
@@ -145,4 +151,42 @@ public class RunFragment extends Fragment {
 //            super.onProviderEnabledChanged(enabled);
         }
     };
+
+    private class RunLoaderCallbacks implements LoaderManager.LoaderCallbacks<Run> {
+
+        @Override
+        public Loader<Run> onCreateLoader(int id, Bundle args) {
+            return new RunLoader(getActivity(), args.getLong(ARG_RUN_ID));
+        }
+
+        @Override
+        public void onLoadFinished(Loader<Run> loader, Run data) {
+            mRun = data;
+            updateUI();
+        }
+
+        @Override
+        public void onLoaderReset(Loader<Run> loader) {
+
+        }
+    }
+
+    private class LocationLoaderCallbacks implements LoaderManager.LoaderCallbacks<Location> {
+
+        @Override
+        public Loader<Location> onCreateLoader(int id, Bundle args) {
+            return new LastLocationLoader(getActivity(), args.getLong(ARG_RUN_ID));
+        }
+
+        @Override
+        public void onLoadFinished(Loader<Location> loader, Location data) {
+            mLastLocation = data;
+            updateUI();
+        }
+
+        @Override
+        public void onLoaderReset(Loader<Location> loader) {
+
+        }
+    }
 }
